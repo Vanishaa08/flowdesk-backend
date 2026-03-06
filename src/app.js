@@ -13,6 +13,7 @@ const healthRoutes = require('./routes/health');
 const testRoutes = require('./routes/test');
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
+const issueRoutes = require('./routes/issues');
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/health', healthRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/projects/:projectId/issues', issueRoutes);
 
 app.use('*', (req, res) => {
   res.status(404).json({
