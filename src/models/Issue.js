@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require('mongoose')
 
 const issueSchema = new mongoose.Schema({
   title: {
@@ -27,6 +27,11 @@ const issueSchema = new mongoose.Schema({
     enum: ['bug', 'feature', 'task', 'improvement'],
     default: 'task'
   },
+  storyPoints: {
+    type: Number,
+    enum: [0, 1, 2, 3, 5, 8, 13, 21],
+    default: 0
+  },
   project: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Project',
@@ -42,11 +47,20 @@ const issueSchema = new mongoose.Schema({
     ref: 'User',
     default: null
   },
+  sprint: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Sprint',
+    default: null
+  },
   order: {
     type: Number,
     default: 0
   },
   dueDate: {
+    type: Date,
+    default: null
+  },
+  completedAt: {
     type: Date,
     default: null
   },
@@ -76,9 +90,20 @@ const issueSchema = new mongoose.Schema({
   timestamps: true
 })
 
-// Indexes for faster queries
 issueSchema.index({ project: 1, status: 1 })
 issueSchema.index({ project: 1, assignee: 1 })
-issueSchema.index({ project: 1, priority: 1 })
+issueSchema.index({ project: 1, sprint: 1 })
+
+// Auto set completedAt when status changes to done
+issueSchema.pre('save', function(next) {
+  if (this.isModified('status')) {
+    if (this.status === 'done' && !this.completedAt) {
+      this.completedAt = new Date()
+    } else if (this.status !== 'done') {
+      this.completedAt = null
+    }
+  }
+  next()
+})
 
 module.exports = mongoose.model('Issue', issueSchema)

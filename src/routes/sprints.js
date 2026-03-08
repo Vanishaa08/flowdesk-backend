@@ -9,7 +9,8 @@ const {
   completeSprint,
   addIssueToSprint,
   removeIssueFromSprint,
-  deleteSprint
+  deleteSprint,
+  getBurndownData
 } = require('../controllers/sprintController')
 const { protect } = require('../middleware/auth')
 
@@ -28,5 +29,6 @@ router.patch('/:sprintId/start', startSprint)
 router.patch('/:sprintId/complete', completeSprint)
 router.post('/:sprintId/issues', addIssueToSprint)
 router.delete('/:sprintId/issues/:issueId', removeIssueFromSprint)
+router.get('/:sprintId/burndown', getBurndownData)
 
 module.exports = router

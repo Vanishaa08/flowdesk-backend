@@ -273,6 +273,82 @@ const deleteSprint = async (req, res, next) => {
   }
 }
 
+// @desc    Get burndown chart data for a sprint
+// @route   GET /api/projects/:projectId/sprints/:sprintId/burndown
+const getBurndownData = async (req, res, next) => {
+  try {
+    const sprint = await Sprint.findById(req.params.sprintId)
+      .populate('issues')
+
+    if (!sprint) throw new ApiError(404, 'Sprint not found')
+
+    if (!sprint.startDate || !sprint.endDate) {
+      throw new ApiError(400, 'Sprint must have start and end dates for burndown chart')
+    }
+
+    const startDate = new Date(sprint.startDate)
+    const endDate = new Date(sprint.endDate)
+    const today = new Date()
+
+    // Total story points in sprint
+    const totalPoints = sprint.issues.reduce((sum, issue) => {
+      return sum + (issue.storyPoints || 0)
+    }, 0)
+
+    // Generate dates between start and end
+    const dates = []
+    const current = new Date(startDate)
+    while (current <= endDate) {
+      dates.push(new Date(current))
+      current.setDate(current.getDate() + 1)
+    }
+
+    // For each date calculate remaining points
+    const burndownData = dates.map(date => {
+      const dateStr = date.toISOString().split('T')[0]
+
+      // Points completed by this date
+      const completedPoints = sprint.issues.reduce((sum, issue) => {
+        if (issue.completedAt && new Date(issue.completedAt) <= date) {
+          return sum + (issue.storyPoints || 0)
+        }
+        return sum
+      }, 0)
+
+      const remainingPoints = totalPoints - completedPoints
+
+      // Ideal burndown (straight line from total to 0)
+      const totalDays = dates.length - 1
+      const dayIndex = dates.indexOf(date)
+      const idealRemaining = totalDays > 0
+        ? Math.round(totalPoints - (totalPoints / totalDays) * dayIndex)
+        : 0
+
+      return {
+        date: dateStr,
+        remaining: remainingPoints,
+        ideal: idealRemaining,
+        completed: completedPoints,
+        // Only show actual data up to today
+        actual: date <= today ? remainingPoints : null
+      }
+    })
+
+    res.status(200).json({
+      success: true,
+      burndown: {
+        sprintName: sprint.name,
+        totalPoints,
+        startDate: sprint.startDate,
+        endDate: sprint.endDate,
+        data: burndownData
+      }
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 module.exports = {
   createSprint,
   getSprints,
@@ -282,5 +358,6 @@ module.exports = {
   completeSprint,
   addIssueToSprint,
   removeIssueFromSprint,
-  deleteSprint
+  deleteSprint,
+  getBurndownData
 }
