@@ -23,15 +23,11 @@ connectDB()
 app.use(helmet())
 app.use(cors({
   origin: function(origin, callback) {
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      process.env.CLIENT_URL,
-      'https://flowdesk-frontend-iota.vercel.app',
-      'https://flowdesk-frontend-vanishaa08s-projects.vercel.app'
-    ].filter(Boolean)
-
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (
+      !origin ||
+      origin.includes('vercel.app') ||
+      origin.includes('localhost')
+    ) {
       callback(null, true)
     } else {
       callback(new Error('Not allowed by CORS'))
